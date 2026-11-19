@@ -41,14 +41,13 @@ documents and targeted verified evidence references as its context. Use only
 fork values accepted by the current spawn schema.
 
 Ensure other workers have finished changes relevant to the handoff before
-Archivist seals it. Assign only one reporting owner for each deployment. Wait
-for its documentation handoff and exact six-column `$deployment-token-report`
-table, preserve both before releasing its slot, then relay them without
-repeating its operational checks. A later
-substantive deployment uses a new ID and receives its own closure and report.
+Archivist seals it. Assign one Archivist to each deployment closure. Wait for
+its documentation handoff, preserve it before releasing its slot, then relay it
+without repeating its operational checks. A later substantive deployment uses
+a new ID and receives its own closure.
 
 Standalone questions, searches, read-only research, and small bounded leaf tasks
-skip deployment closure and token reporting. Assign ordinary documentation work
-only for an explicit request or verified changes to durable project knowledge.
+skip deployment closure. Assign ordinary documentation work only for an explicit
+request or verified changes to durable project knowledge.
 If Archivist is unavailable or blocked, report the limitation and remaining work
 accurately.

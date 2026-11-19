@@ -2,7 +2,7 @@
 
 This document is a focused analysis of the design lessons behind
 `codex_workflow`, followed by its agent roles, installed topology, lifecycle
-commands, deployment token reporting, and release boundaries. It analyzes the source
+commands, deployment closure, and release boundaries. It analyzes the source
 package represented by `codex_workflow/`; it is not an additional executable
 instruction surface.
 
@@ -21,10 +21,10 @@ For exact behavior, use the source that owns the relevant contract:
   release rules;
 - `codex_workflow/operate/*.md` for user-facing lifecycle procedures;
 - `codex_workflow/runtime/*.py` for deterministic lifecycle mutations; and
-- `codex_workflow/skills/deployment-token-report/` for deployment usage
-  reporting.
+- `codex_workflow/runtime/` and `codex_workflow/agents/archivist.toml` for
+  deployment closure and documentation handoff.
 
-This revision describes packaged version `1.2.3`, read from
+This revision describes packaged version `1.3.0`, read from
 `codex_workflow/operate/VERSION`. Version markers, package validation, and
 release tests prevent that value from drifting from the distributed user
 instruction block.
@@ -60,10 +60,6 @@ and decides once.
 
 This is why I apply **batching guidelines** to reduce the number of main-agent rollouts. I'll explain them later in the `codex_workflow` design section.
 AI isn't going to naturally balance all of these trade-offs for you. You have to experiment, measure, observe, and optimize the workflow yourself.
-
-That's also why I added end-of-session token statistics through the built-in workflow skill:
-
-![End-of-session token report](token_report.png)
 
 ---
 
@@ -189,18 +185,14 @@ The coordination process roughly works like this:
 2. The main plans bounded work and gives each worker a capsule with
    project-specific guidance. Related workers are dispatched within capacity
    and return compact reports directly to the main across scheduled waves.
-3. At substantive deployment closure, `agent_docs/` is updated, the Git
-   handoff is completed, and `$deployment-token-report` is generated.
+3. At substantive deployment closure, `agent_docs/` is updated and the Git
+   handoff is completed.
 
 Medium and Heavy keep standalone questions, searches, read-only research, and
 small bounded tasks on the direct fast path. These leaf tasks skip deployment
 entry, full documentation intake, automatic `agent_docs/` updates, and closure
 reporting. Research supporting an active deployment remains part of that
 deployment. Explicit documentation requests retain their assigned scope.
-
-Here's an example of the token-usage report generated at the end of each Heavy-route deployment:
-
-![End-of-session token report](token_report.png)
 
 For difficult or broad questions, parallel **Explorers** or **Investigators**
 (e.g., 2, 3, or more) are recommended when independent evidence can improve
@@ -261,7 +253,7 @@ After dispatching a worker, the Main Agent waits for it to finish or ask for hel
 | **Default Executor** | Luna · max | **Default implementation worker.** Handles normal production tasks delegated by the Main Agent, including coding, modifications, integration work, and other routine implementation activities. Multiple Default Executors may work in parallel when tasks can be safely decomposed. | As needed |
 | **Senior Executor** | GPT-6.1 Sol · high | **High-capability implementation specialist.** Reserved for exceptionally difficult or high-impact work where stronger reasoning is justified, such as project-core changes, complex algorithms, architectural modifications, or mathematically demanding tasks. | 1 maximum |
 | **Tester** | Luna · max | **Independent verification specialist.** Designs, implements, and runs tests; validates requirements and acceptance criteria; identifies regressions or defects; and provides verification evidence before work is accepted. | As needed |
-| **Archivist** | Luna · xhigh | **Documentation and closure specialist.** Handles assigned documentation outside the three main-owned deployment-state documents, performs the read-only Git handoff, and produces the end-of-deployment token report. | 1 per substantive deployment, plus as needed |
+| **Archivist** | Luna · xhigh | **Documentation and closure specialist.** Handles assigned documentation outside the three main-owned deployment-state documents and performs the read-only Git handoff. | 1 per substantive deployment, plus as needed |
 
 All report-producing workers are direct children of the main agent.
 Explorers answering the same question share one Exploration ID; Investigators
@@ -288,8 +280,6 @@ earlier status commentary exists.
 │   ├── investigator.toml
 │   ├── senior_executor.toml
 │   └── tester.toml
-├── skills/
-│   └── deployment-token-report/
 └── codex_workflow/
     ├── archivist.md
     ├── heavy_route.md
@@ -445,41 +435,7 @@ unwrapped first. It removes hidden project resources and the workflow-owned
 marked worker TOMLs, manifest-owned marked skills, and the dedicated runtime
 including backups. It preserves `agent_docs/` and unrelated user content.
 
-## 4. Deployment Token Report
-
-The reporting skill is installed under `~/.codex/skills/` but is eligible only
-for an Archivist assigned to substantive deployment closure.
-
-After repository work is sealed, the parser:
-
-1. Uses `CODEX_THREAD_ID` to identify the calling Archivist.
-2. Verifies that the caller is a spawned Archivist and resolves its parent main
-   session.
-3. Finds the exact deployment marker in assistant message text in that main
-   rollout.
-4. Uses the latest user turn at or before the marker as the report start.
-5. Indexes descendant sessions, omitting unrelated sessions such as guardians.
-6. Aggregates recorded `last_token_usage` values through the parser start time.
-7. Groups rows by agent role and appends the main-agent row last.
-
-`Quantity` counts distinct task paths represented for a role, `Rollouts` counts
-model generations with recorded last-token usage, `Input` includes its cached
-subset, and `Output` is recorded generated-token usage. The cutoff excludes the
-Archivist's post-parser response and the main's later final response.
-
-The required result is:
-
-```text
-| Agent | Quantity | Rollouts | Cached input | Input | Output |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| <agent role> | <count> | <count> | <tokens> | <tokens> | <tokens> |
-```
-
-Missing boundaries, malformed session data, invalid token counts, incomplete
-ancestry, or unavailable caller metadata produce a limitation instead of an
-estimate.
-
-## 5. Repository, packaging, and release boundaries
+## 4. Repository, packaging, and release boundaries
 
 The repository contains three classes of files:
 

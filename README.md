@@ -14,7 +14,7 @@ Built for token-efficient agent orchestration, with swarm execution, persistent 
 Change permision to `approve for me` or `full access`.
 ▶️ Send:
 ```text
-Download and extract the latest `codex_workflow-<version>.zip` asset from https://github.com/viettran-edgeAI/codex_workflow/releases. Verify it against `SHA256SUMS`, then read the bundled `codex_workflow/operate/bootstrap.md` and follow it to complete the initial installation.
+Download and extract the latest `codex_workflow-<version>.zip` asset from https://github.com/zzJune/codex_workflow/releases. Verify it against `SHA256SUMS`, then read the bundled `codex_workflow/operate/bootstrap.md` and follow it to complete the initial installation.
 ```
 > ⭐ Recommended: use 5.6 Luna xhigh for installation. 
 
@@ -85,7 +85,6 @@ What's special about the system:
 - Worker reports preserve material evidence while referencing bulky logs and artifacts instead of copying them.
 - The **Senior Executor** serves as a fallback for exceptionally difficult problems where stronger reasoning is required.
 - Addresses the issue of the main agent waking up workers too often.
-- Built-in token report: End-of-session token statistics for each agent, allowing you to monitor how much each agent rolls out and how they use their tokens.
 ......
 
 ## Light benchmark

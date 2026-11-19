@@ -32,7 +32,7 @@ BUILTIN_WORKERS = frozenset(
         "investigator",
     }
 )
-BUILTIN_SKILLS = frozenset({"deployment-token-report"})
+BUILTIN_SKILLS = frozenset()
 
 
 @dataclass(frozen=True)
@@ -185,7 +185,6 @@ class PackageLayout:
                 required_skill_files = (
                     skill_root / "SKILL.md",
                     skill_root / "agents" / "openai.yaml",
-                    skill_root / "scripts" / "report_tokens.py",
                 )
                 if not all(path.is_file() for path in required_skill_files):
                     raise ValidationError(f"package skill files are incomplete: {skill}")

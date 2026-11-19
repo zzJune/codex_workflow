@@ -23,8 +23,8 @@ generated outputs, and project-owned content.
   wrapped by the current workflow.
 - Project documentation updates during deployment: main owns `project_progress.md`,
   `project_diary.md`, and `latest_session_work.md`; Archivist owns other
-  assigned public and project documents plus the closing read-only Git handoff
-  and deployment token report. An installer-assigned Archivist may initialize
+  assigned public and project documents plus the closing read-only Git handoff.
+  An installer-assigned Archivist may initialize
   new or still-template versions of the three state documents.
 
 ## Module boundaries

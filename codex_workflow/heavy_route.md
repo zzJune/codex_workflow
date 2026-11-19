@@ -27,7 +27,7 @@ rollouts only when the package genuinely requires that capability.
 | Default Executor | A Luna production worker owning local discovery, implementation, self-check, deployment operations, and ordinary repair inside one bounded package. |
 | Senior Executor | The one optional Sol worker for an exceptionally difficult mathematical, logical, architectural, or cross-cutting package. |
 | Tester | An independent verifier owning the assigned verification, test assets, and suitable test execution, but not production repair. |
-| Archivist | The required substantive-deployment closure worker defined by `~/.codex/codex_workflow/archivist.md`. It owns concise assigned documentation outside the main-owned deployment-state documents, read-only Git reporting, and the closing Deployment Token Report. |
+| Archivist | The required substantive-deployment closure worker defined by `~/.codex/codex_workflow/archivist.md`. It owns concise assigned documentation outside the main-owned deployment-state documents and the read-only Git handoff. |
 
 ## Working State
 
@@ -229,8 +229,8 @@ blocker.
 Use the direct fast path for standalone questions, searches, read-only research,
 and small bounded leaf tasks. Work directly when no support workers are needed.
 Read only task-relevant project documents and skip deployment entry, full
-documentation intake, automatic `agent_docs/` updates, Archivist closure, and
-token reporting. Handle explicit documentation requests within their assigned
+documentation intake, automatic `agent_docs/` updates, and Archivist closure.
+Handle explicit documentation requests within their assigned
 scope. Research supporting an active deployment remains part of that deployment.
 
 Before the final response that completes, pauses, or blocks a substantive
@@ -239,5 +239,5 @@ deployment, update `agent_docs/project_progress.md`,
 keeping them concise and canonical. Then follow
 `~/.codex/codex_workflow/archivist.md` exactly once. Combine any other verified
 documentation updates with its required closure assignment when practical.
-Relay its handoff and exact six-column `$deployment-token-report` table. Use a
-new deployment ID for each later deployment.
+Relay its documentation handoff. Use a new deployment ID for each later
+deployment.

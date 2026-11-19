@@ -222,6 +222,7 @@ class MarkerTests(unittest.TestCase):
         self.assertIn('model = "gpt-6-luna"', investigator)
         self.assertIn('model = "gpt-6-luna"', executor)
         self.assertIn('model = "gpt-6.1-sol"', senior)
+        self.assertIn('model_reasoning_effort = "medium"', senior)
         self.assertIn('model = "gpt-6-luna"', tester)
         self.assertIn('model = "gpt-6-luna"', archivist)
 
@@ -230,15 +231,8 @@ class MarkerTests(unittest.TestCase):
         self.assertIn('fork_turns="all"', handoff)
         self.assertIn('fork_turns="none"', handoff)
         self.assertIn("canonical deployment-state", handoff)
-        self.assertIn("one reporting owner", handoff)
-        self.assertIn("$deployment-token-report", archivist)
-        skill = (
-            PACKAGE / "skills" / "deployment-token-report" / "SKILL.md"
-        ).read_text(encoding="utf-8")
-        self.assertEqual(
-            skill.count("| Agent | Quantity | Rollouts | Cached input | Input | Output |"),
-            1,
-        )
+        self.assertIn("one Archivist to each deployment closure", handoff)
+        self.assertNotIn("deployment-token-report", archivist)
         for policy in (agents_policy, medium, heavy, handoff, archivist):
             self.assertNotIn("end this session", policy.lower())
 
@@ -295,23 +289,14 @@ class MarkerTests(unittest.TestCase):
                 PackageLayout.resolve(root)
 
     def test_closure_bootstrap_and_worker_boundaries_remain_explicit(self) -> None:
-        skill = (
-            PACKAGE / "skills" / "deployment-token-report" / "SKILL.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("The required table template is exactly", skill)
-        self.assertIn("| --- | ---: | ---: | ---: | ---: | ---: |", skill)
-        self.assertIn("Keep the columns exactly as shown", skill)
-        self.assertIn("Use the supplied deployment ID unchanged", skill)
-        self.assertIn("assistant message text there", skill)
-
         handoff = (PACKAGE / "archivist.md").read_text(encoding="utf-8")
         archivist = (PACKAGE / "agents" / "archivist.toml").read_text(
             encoding="utf-8"
         )
         self.assertIn("Keep those files outside Archivist's write", handoff)
-        self.assertIn("one reporting owner", handoff)
+        self.assertIn("one Archivist to each deployment closure", handoff)
         self.assertIn("Do not\nedit those files during a deployment", archivist)
-        self.assertIn("Preserve\nits exact six-column table", archivist)
+        self.assertNotIn("token report", archivist.lower())
         for document in ("project_progress.md", "latest_session_work.md"):
             self.assertIn(document, archivist)
             template = (PACKAGE / "project_docs" / document).read_text(
@@ -399,7 +384,7 @@ class MarkerTests(unittest.TestCase):
             ):
                 PackageLayout.resolve(root)
 
-    def test_package_requires_builtin_skill(self) -> None:
+    def test_package_rejects_unsupported_skill(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "codex_workflow"
             shutil.copytree(
@@ -407,7 +392,11 @@ class MarkerTests(unittest.TestCase):
                 root,
                 ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
             )
-            shutil.rmtree(root / "skills" / "deployment-token-report")
+            skill = root / "skills" / "unexpected"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text(
+                "<!-- codex-workflow-skill: unexpected -->\n", encoding="utf-8"
+            )
             with self.assertRaisesRegex(ValidationError, "package skill set"):
                 PackageLayout.resolve(root)
 
@@ -903,22 +892,14 @@ class LifecycleIntegrationTests(unittest.TestCase):
         self.assertTrue((self.runtime.agents / "explorer.toml").is_file())
         self.assertTrue((self.runtime.agents / "investigator.toml").is_file())
         self.assertTrue((self.runtime.agents / "archivist.toml").is_file())
-        self.assertTrue(
-            (
-                self.runtime.skills
-                / "deployment-token-report"
-                / "scripts"
-                / "report_tokens.py"
-            ).is_file()
-        )
-        self.assertTrue(
+        self.assertFalse((self.runtime.skills / "deployment-token-report").exists())
+        self.assertFalse(
             (
                 self.runtime.runtime
                 / "templates"
                 / "skills"
                 / "deployment-token-report"
-                / "SKILL.md"
-            ).is_file()
+            ).exists()
         )
         self.assertNotIn(
             "max_concurrent_threads_per_session",
@@ -982,15 +963,15 @@ class LifecycleIntegrationTests(unittest.TestCase):
             "# Project policy\nKeep this rule.\n",
         )
 
-    def test_bootstrap_rejects_unowned_skill_collision(self) -> None:
-        collision = self.runtime.skills / "deployment-token-report"
-        collision.mkdir(parents=True)
-        (collision / "SKILL.md").write_text(
-            "---\nname: deployment-token-report\ndescription: local\n---\n",
-            encoding="utf-8",
-        )
-        with self.assertRaisesRegex(ValidationError, "unowned skill directory"):
-            plan_bootstrap(self.package, self.runtime, self.project)
+    def test_bootstrap_preserves_unrelated_user_skills(self) -> None:
+        skill = self.runtime.skills / "my-local-skill"
+        skill.mkdir(parents=True)
+        entry = skill / "SKILL.md"
+        entry.write_text("---\nname: local\n---\n", encoding="utf-8")
+
+        plan_bootstrap(self.package, self.runtime, self.project).apply()
+
+        self.assertEqual(entry.read_text(encoding="utf-8"), "---\nname: local\n---\n")
 
     def test_bootstrap_cleans_staging_and_keeps_agent_docs_trackable(self) -> None:
         staging = self.project_root / "Codex_Workflow"
@@ -1242,13 +1223,7 @@ class LifecycleIntegrationTests(unittest.TestCase):
         self.assertEqual(v2_settings["default_wait_timeout_ms"], 300000)
         self.assertEqual(v2_settings["max_wait_timeout_ms"], 1800000)
         self.assertEqual(v2_settings["keep_user"], "yes")
-        installed_skill = self.runtime.skills / "deployment-token-report"
-        self.assertEqual(
-            (installed_skill / "SKILL.md").read_text(encoding="utf-8"),
-            (PACKAGE / "skills" / "deployment-token-report" / "SKILL.md").read_text(
-                encoding="utf-8"
-            ),
-        )
+        self.assertFalse((self.runtime.skills / "deployment-token-report").exists())
         self.assertTrue(any((self.runtime.runtime / ".backups").iterdir()))
 
     def test_update_reconciles_obsolete_owned_runtime_and_workers(self) -> None:
@@ -1291,28 +1266,31 @@ class LifecycleIntegrationTests(unittest.TestCase):
             (incoming.agent_templates / "explorer.toml").read_text(encoding="utf-8"),
         )
 
-    def test_update_restores_owned_skill_and_removes_stale_skill_files(self) -> None:
+    def test_update_removes_retired_owned_skill_and_preserves_user_skills(self) -> None:
         self.bootstrap()
         installed_skill = self.runtime.skills / "deployment-token-report"
+        installed_skill.mkdir(parents=True)
         (installed_skill / "SKILL.md").write_text(
-            (installed_skill / "SKILL.md")
-            .read_text(encoding="utf-8")
-            .replace("Compile per-agent", "Locally changed per-agent"),
+            "<!-- codex-workflow-skill: deployment-token-report -->\nold skill\n",
             encoding="utf-8",
         )
         stale = installed_skill / "stale.txt"
         stale.write_text("stale", encoding="utf-8")
+        local_skill = self.runtime.skills / "my-local-skill"
+        local_skill.mkdir()
+        local_entry = local_skill / "SKILL.md"
+        local_entry.write_text("---\nname: local\n---\n", encoding="utf-8")
+        state_path = self.runtime.runtime / "install_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["owned_skills"] = ["deployment-token-report"]
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
         incoming = self.incoming_package("skill-update-incoming", "1.2.0")
         plan = plan_update(incoming, self.runtime, self.project)
         backup = Path(plan.details["backup"])
         plan.apply()
-        self.assertEqual(
-            (installed_skill / "SKILL.md").read_text(encoding="utf-8"),
-            (incoming.skill_templates / "deployment-token-report" / "SKILL.md").read_text(
-                encoding="utf-8"
-            ),
-        )
+        self.assertFalse(installed_skill.exists())
         self.assertFalse(stale.exists())
+        self.assertEqual(local_entry.read_text(encoding="utf-8"), "---\nname: local\n---\n")
         self.assertTrue(
             (
                 backup
@@ -1656,9 +1634,7 @@ class LifecycleIntegrationTests(unittest.TestCase):
         self.assertFalse(self.runtime.runtime.exists())
         self.assertTrue(unrelated_worker.is_file())
         self.assertTrue((unrelated_skill / "SKILL.md").is_file())
-        self.assertFalse(
-            (self.runtime.skills / "deployment-token-report").exists()
-        )
+        self.assertFalse((self.runtime.skills / "deployment-token-report").exists())
         self.assertEqual(
             self.runtime.user_agents.read_text(encoding="utf-8"),
             "# Keep this user policy.\n",

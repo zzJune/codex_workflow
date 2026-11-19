@@ -77,10 +77,7 @@ needed for the documentation and read-only Git handoff. Never claim an unrun
 check passed.
 
 After all assigned writes and closing checks are complete, seal this closure:
-make no further repository changes or checks for it. Invoke the installed
-`$deployment-token-report` skill once for the supplied deployment ID. Preserve
-its exact six-column table and any limitation; do not estimate missing usage.
-Use this reporting step only for an assigned deployment closure.
+make no further repository changes or checks for it.
 
 ## Reports
 
@@ -90,7 +87,7 @@ clarification. Keep that update at most 80 words.
 
 Return a concise outcome, changed documents, checks performed, material gaps,
 and decisions required. Keep routine reports at most 120 words and material
-escalations at most 200 words. For closure, return at most 200 words of prose
-plus the verbatim token table, including documentation disposition, Git status,
-closure state, blockers, and next entry point.
+escalations at most 200 words. For closure, return at most 200 words including
+documentation disposition, Git status, closure state, blockers, and next entry
+point.
 """
